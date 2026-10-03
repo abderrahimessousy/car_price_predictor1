@@ -1,35 +1,354 @@
+
 <!doctype html>
-<html lang="en"><head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Car Price Predictor</title>
-<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head><body>
-<header><h1>🚗 Car Price Predictor</h1>
-<p>Estimate the resale price of a used car in DH · model: {{ meta.best_model }} · R² {{ '%.2f'|format(meta.test_r2) }} · trained on {{ '{:,}'.format(meta.n_rows) }} listings</p></header>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Car Price Predictor</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<header>
+    <h1>Car Price Predictor</h1>
+</header>
+
 <main>
-<section class="card">
-<form method="post">
- <div class="grid">
-  <div><label>Brand</label><select name="brand">{% for b in meta.brands %}<option {{ 'selected' if (f.brand or 'Maruti')==b }}>{{ b }}</option>{% endfor %}</select></div>
-  <div><label>Vehicle age (years)</label><input type="number" name="vehicle_age" min="0" max="{{ r.vehicle_age[1]|int }}" step="1" value="{{ f.vehicle_age or r.vehicle_age[2]|int }}" required></div>
-  <div><label>Kilometers driven</label><input type="number" name="km_driven" min="0" max="1000000" step="500" value="{{ f.km_driven or r.km_driven[2]|int }}" required></div>
-  <div><label>Fuel type</label><select name="fuel_type">{% for x in meta.fuels %}<option {{ 'selected' if (f.fuel_type or 'Petrol')==x }}>{{ x }}</option>{% endfor %}</select></div>
-  <div><label>Transmission</label><select name="transmission_type">{% for x in meta.trans %}<option {{ 'selected' if (f.transmission_type or 'Manual')==x }}>{{ x }}</option>{% endfor %}</select></div>
-  <div><label>Seller type</label><select name="seller_type">{% for x in meta.sellers %}<option {{ 'selected' if f.seller_type==x }}>{{ x }}</option>{% endfor %}</select></div>
-  <div><label>Mileage (km/l)</label><input type="number" name="mileage" min="1" max="50" step="0.1" value="{{ f.mileage or r.mileage[2] }}" required></div>
-  <div><label>Engine (cc)</label><input type="number" name="engine" min="500" max="6000" step="1" value="{{ f.engine or r.engine[2]|int }}" required></div>
-  <div><label>Max power (bhp)</label><input type="number" name="max_power" min="20" max="600" step="0.1" value="{{ f.max_power or r.max_power[2] }}" required></div>
-  <div><label>Seats</label><input type="number" name="seats" min="2" max="10" step="1" value="{{ f.seats or r.seats[2]|int }}" required></div>
- </div>
- <button type="submit">Predict price</button>
-</form>
-{% if error %}<div class="res err">{{ error }}</div>{% endif %}
-{% if result %}<div class="res ok">
- <div class="lbl">Estimated selling price</div>
- <div class="big">{{ result.price }} DH</div>
- <div class="sub">Typical range: {{ result.low }} – {{ result.high }} DH</div></div>{% endif %}
-</section>
+
+    <div class="layout">
+
+        <!-- Prediction Form -->
+        <section class="card form-card">
+
+            <form method="post">
+
+                <div class="grid">
+
+                    <!-- Brand -->
+                    <div>
+                        <label>Brand</label>
+
+                        <select name="brand">
+                            {% for b in meta.brands %}
+                                <option value="{{ b }}"
+                                    {{ 'selected' if (f.brand or 'Maruti') == b else '' }}>
+                                    {{ b }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+
+                    <!-- Vehicle Age -->
+                    <div>
+                        <label>Vehicle age (years)</label>
+
+                        <input
+                            type="number"
+                            name="vehicle_age"
+                            min="0"
+                            max="{{ r.vehicle_age[1]|int }}"
+                            step="1"
+                            value="{{ f.vehicle_age or r.vehicle_age[2]|int }}"
+                            required
+                        >
+                    </div>
+
+
+                    <!-- Kilometers Driven -->
+                    <div>
+                        <label>Kilometers driven</label>
+
+                        <input
+                            type="number"
+                            name="km_driven"
+                            min="0"
+                            max="1000000"
+                            step="500"
+                            value="{{ f.km_driven or r.km_driven[2]|int }}"
+                            required
+                        >
+                    </div>
+
+
+                    <!-- Fuel Type -->
+                    <div>
+                        <label>Fuel type</label>
+
+                        <select name="fuel_type">
+
+                            {% for x in meta.fuels %}
+
+                                {% if x != 'Electric' %}
+
+                                    <option value="{{ x }}"
+                                        {{ 'selected' if (f.fuel_type or 'Petrol') == x else '' }}>
+                                        {{ x }}
+                                    </option>
+
+                                {% endif %}
+
+                            {% endfor %}
+
+                        </select>
+                    </div>
+
+
+                    <!-- Transmission -->
+                    <div>
+                        <label>Transmission</label>
+
+                        <select name="transmission_type">
+
+                            {% for x in meta.trans %}
+
+                                <option value="{{ x }}"
+                                    {{ 'selected' if (f.transmission_type or 'Manual') == x else '' }}>
+                                    {{ x }}
+                                </option>
+
+                            {% endfor %}
+
+                        </select>
+                    </div>
+
+
+                    <!-- Seller Type -->
+                    <div>
+                        <label>Seller type</label>
+
+                        <select name="seller_type">
+
+                            {% for x in meta.sellers %}
+
+                                <option value="{{ x }}"
+                                    {{ 'selected' if (f.seller_type or 'Individual') == x else '' }}>
+                                    {{ x }}
+                                </option>
+
+                            {% endfor %}
+
+                        </select>
+                    </div>
+
+
+                    <!-- Mileage -->
+                    <div>
+                        <label>Mileage (km/l)</label>
+
+                        <input
+                            type="number"
+                            name="mileage"
+                            min="1"
+                            max="50"
+                            step="0.1"
+                            value="{{ f.mileage or r.mileage[2] }}"
+                            required
+                        >
+                    </div>
+
+
+                    <!-- Engine -->
+                    <div>
+                        <label>Engine (cc)</label>
+
+                        <input
+                            type="number"
+                            name="engine"
+                            min="500"
+                            max="6000"
+                            step="1"
+                            value="{{ f.engine or r.engine[2]|int }}"
+                            required
+                        >
+                    </div>
+
+
+                    <!-- Max Power -->
+                    <div>
+                        <label>Max power (bhp)</label>
+
+                        <input
+                            type="number"
+                            name="max_power"
+                            min="20"
+                            max="600"
+                            step="0.1"
+                            value="{{ f.max_power or r.max_power[2] }}"
+                            required
+                        >
+                    </div>
+
+
+                    <!-- Seats -->
+                    <div>
+                        <label>Seats</label>
+
+                        <input
+                            type="number"
+                            name="seats"
+                            min="2"
+                            max="10"
+                            step="1"
+                            value="{{ f.seats or r.seats[2]|int }}"
+                            required
+                        >
+                    </div>
+
+                </div>
+
+
+                <!-- Submit Button -->
+                <button type="submit">
+                    Predict price
+                </button>
+
+            </form>
+
+        </section>
+
+
+        <!-- Result Card -->
+        <aside class="card result-card">
+
+            <div class="result-head">
+
+                <span class="kicker">
+                    Valuation
+                </span>
+
+                <h2>
+                    Estimated price
+                </h2>
+
+            </div>
+
+
+            {% if error %}
+
+                <!-- Error -->
+                <div class="res err">
+                    {{ error }}
+                </div>
+
+
+            {% elif result %}
+
+                <!-- Prediction Result -->
+                <div class="res ok">
+
+                    <div class="lbl">
+                        Estimated selling price
+                    </div>
+
+                    <div class="big">
+
+                        {{ result.price }}
+
+                        <span class="cur">
+                            DH
+                        </span>
+
+                    </div>
+
+                    <div class="sub">
+
+                        Typical range:
+                        {{ result.low }}
+                        –
+                        {{ result.high }}
+                        DH
+
+                    </div>
+
+                </div>
+
+
+            {% else %}
+
+                <!-- Waiting -->
+                <div class="res idle">
+
+                    <div class="lbl">
+                        Awaiting input
+                    </div>
+
+                    <div class="idle-text">
+
+                        Fill in the vehicle details and submit
+                        the form to see an estimated price.
+
+                    </div>
+
+                </div>
+
+            {% endif %}
+
+
+            <!-- Model Statistics -->
+            <div class="result-foot">
+
+                <div class="stat">
+
+                    <span>
+                        Model
+                    </span>
+
+                    <strong>
+                        {{ meta.best_model }}
+                    </strong>
+
+                </div>
+
+
+                <div class="stat">
+
+                    <span>
+                        R² score
+                    </span>
+
+                    <strong>
+                        {{ '%.2f'|format(meta.test_r2) }}
+                    </strong>
+
+                </div>
+
+
+                <div class="stat">
+
+                    <span>
+                        Listings
+                    </span>
+
+                    <strong>
+                        {{ '{:,}'.format(meta.n_rows) }}
+                    </strong>
+
+                </div>
+
+            </div>
+
+        </aside>
+
+    </div>
 
 </main>
-<footer>Prices converted from INR to DH (1 INR ≈ 0.097 DH) · data: CarDekho listings</footer>
-</body></html>
+
+
+<!-- Footer -->
+<footer>
+
+Prices converted from INR to DH
+using a fixed project conversion rate of 1 INR = 0.097 DH
+·<br>data: CarDekho listings
+
+</footer>
+
+</body>
+
+</html>
+
